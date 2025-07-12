@@ -4,7 +4,6 @@ from database import initialize_database, create_connection
 import csv
 from ttkthemes import ThemedTk
 from scraper import scrape_recipe
-main
 
 class PantryPal(ThemedTk):
     def __init__(self):
@@ -103,7 +102,7 @@ class PantryPal(ThemedTk):
             writer = csv.writer(f)
             writer.writerow([i[0] for i in cursor.description])
             writer.writerows(cursor)
-
+            
         messagebox.showinfo("Backup Successful", f"Backup completed successfully in {backup_dir}")
 
     def create_recipe_widgets(self):
@@ -137,7 +136,6 @@ class PantryPal(ThemedTk):
         self.scrape_recipe_button = ttk.Button(self.recipe_entry_frame, text="Scrape Recipe", command=self.scrape_and_fill_recipe)
         self.scrape_recipe_button.grid(row=4, column=0, padx=5, pady=5, sticky="w")
 
-main
         # Treeview to display recipes
         self.recipe_tree = ttk.Treeview(self.recipes_frame, columns=("ID", "Name", "Category"), show="headings")
         self.recipe_tree.pack(fill="both", expand=True, padx=10, pady=5)
@@ -180,7 +178,7 @@ main
     def load_recipes(self):
         for i in self.recipe_tree.get_children():
             self.recipe_tree.delete(i)
-
+        
         cursor = self.conn.cursor()
         cursor.execute("SELECT id, name, category FROM recipes")
         rows = cursor.fetchall()
@@ -299,7 +297,7 @@ main
 
         for ingredient in ingredients:
             cursor.execute("INSERT INTO shopping_list (name, purchased) VALUES (?, ?)", (ingredient, 0))
-
+        
         self.conn.commit()
         self.load_shopping_list()
         messagebox.showinfo("Success", "Ingredients added to shopping list.")
@@ -309,7 +307,6 @@ main
         self.ingredients_entry.delete(0, "end")
         self.instructions_entry_recipes.delete("1.0", "end")
         self.recipe_category_entry.delete(0, "end")
-
 
     def scrape_and_fill_recipe(self):
         url = simpledialog.askstring("Scrape Recipe", "Enter the URL of the recipe:")
@@ -325,22 +322,21 @@ main
         else:
             messagebox.showerror("Error", "Failed to scrape the recipe. Please check the URL and try again.")
 
-main
     def load_meal_plan(self):
         for i in self.meal_plan_tree.get_children():
             self.meal_plan_tree.delete(i)
-
+        
         cursor = self.conn.cursor()
         cursor.execute("""
-            SELECT meal_plan.date, meal_plan.meal_type, recipes.name
-            FROM meal_plan
+            SELECT meal_plan.date, meal_plan.meal_type, recipes.name 
+            FROM meal_plan 
             JOIN recipes ON meal_plan.recipe_id = recipes.id
             ORDER BY meal_plan.date
         """)
         rows = cursor.fetchall()
         for row in rows:
             self.meal_plan_tree.insert("", "end", values=row)
-
+            
         self.populate_recipe_combobox()
 
     def add_to_meal_plan(self):
@@ -428,7 +424,7 @@ main
     def load_shopping_list(self):
         for i in self.shopping_list_tree.get_children():
             self.shopping_list_tree.delete(i)
-
+        
         cursor = self.conn.cursor()
         cursor.execute("SELECT * FROM shopping_list")
         rows = cursor.fetchall()

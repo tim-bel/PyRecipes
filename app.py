@@ -291,9 +291,12 @@ class PantryPal(ThemedTk):
 
         ttk.Label(view_window, text="Instructions:").grid(row=3, column=0, sticky="w")
         instructions_text = tk.Text(view_window, height=10, width=40)
-        instructions_text.grid(row=3, column=1, sticky="w")
+        instructions_text.grid(row=3, column=1, sticky="nsew")
         instructions_text.insert("1.0", recipe[2])
         instructions_text.config(state="disabled")
+
+        view_window.grid_columnconfigure(1, weight=1)
+        view_window.grid_rowconfigure(3, weight=1)
 
     def edit_recipe(self):
         selected_item = self.recipe_tree.focus()

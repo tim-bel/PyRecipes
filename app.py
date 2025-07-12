@@ -66,6 +66,30 @@ class PantryPal(ThemedTk):
         self.add_to_plan_button = ttk.Button(self.add_meal_frame, text="Add to Plan", command=self.add_to_meal_plan)
         self.add_to_plan_button.grid(row=3, column=1, padx=5, pady=5, sticky="e")
 
+        self.add_ingredients_from_plan_button = ttk.Button(self.meal_planner_frame, text="Add Ingredients to Shopping List", command=self.add_ingredients_from_plan)
+        self.add_ingredients_from_plan_button.pack(pady=5)
+
+    def add_ingredients_from_plan(self):
+        selected_items = self.meal_plan_tree.selection()
+        if not selected_items:
+            messagebox.showerror("Error", "Please select a meal from the plan.")
+            return
+
+        cursor = self.conn.cursor()
+        for selected_item in selected_items:
+            # The values are (Date, Meal Type, Recipe Name)
+            recipe_name = self.meal_plan_tree.item(selected_item, "values")[2]
+            cursor.execute("SELECT ingredients FROM recipes WHERE name=?", (recipe_name,))
+            ingredients_str = cursor.fetchone()[0]
+            ingredients = [ing.strip() for ing in ingredients_str.split(",")]
+
+            for ingredient in ingredients:
+                cursor.execute("INSERT INTO shopping_list (name, purchased) VALUES (?, ?)", (ingredient, 0))
+
+        self.conn.commit()
+        self.load_shopping_list()
+        messagebox.showinfo("Success", "Ingredients from selected meals added to shopping list.")
+
     def create_menu(self):
         self.menu_bar = tk.Menu(self)
         self.config(menu=self.menu_bar)
@@ -73,8 +97,45 @@ class PantryPal(ThemedTk):
         self.file_menu = tk.Menu(self.menu_bar, tearoff=0)
         self.menu_bar.add_cascade(label="File", menu=self.file_menu)
         self.file_menu.add_command(label="Backup to CSV", command=self.backup_to_csv)
+        self.file_menu.add_command(label="Export All Recipes to CSV", command=self.export_all_recipes_to_csv)
         self.file_menu.add_separator()
         self.file_menu.add_command(label="Exit", command=self.quit)
+
+    def export_recipe_to_csv(self):
+        selected_item = self.recipe_tree.focus()
+        if not selected_item:
+            messagebox.showerror("Error", "Please select a recipe to export.")
+            return
+
+        recipe_id = self.recipe_tree.item(selected_item, "values")[0]
+        cursor = self.conn.cursor()
+        cursor.execute("SELECT * FROM recipes WHERE id=?", (recipe_id,))
+        recipe = cursor.fetchone()
+
+        file_path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV files", "*.csv")])
+        if not file_path:
+            return
+
+        with open(file_path, "w", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerow([i[0] for i in cursor.description])
+            writer.writerow(recipe)
+
+        messagebox.showinfo("Export Successful", f"Recipe exported to {file_path}")
+
+    def export_all_recipes_to_csv(self):
+        file_path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV files", "*.csv")])
+        if not file_path:
+            return
+
+        cursor = self.conn.cursor()
+        cursor.execute("SELECT * FROM recipes")
+        with open(file_path, "w", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerow([i[0] for i in cursor.description])
+            writer.writerows(cursor)
+
+        messagebox.showinfo("Export Successful", f"All recipes exported to {file_path}")
 
     def backup_to_csv(self):
         backup_dir = filedialog.askdirectory()
@@ -159,6 +220,16 @@ class PantryPal(ThemedTk):
         self.add_to_shopping_list_button = ttk.Button(self.recipe_management_frame, text="Add to Shopping List", command=self.add_ingredients_to_shopping_list)
         self.add_to_shopping_list_button.pack(side="left", padx=5)
 
+        self.export_recipe_button = ttk.Button(self.recipe_management_frame, text="Export Recipe to CSV", command=self.export_recipe_to_csv)
+        self.export_recipe_button.pack(side="left", padx=5)
+
+    def add_ingredient_to_shopping_list(self, ingredient_name):
+        cursor = self.conn.cursor()
+        cursor.execute("INSERT INTO shopping_list (name, purchased) VALUES (?, ?)", (ingredient_name, 0))
+        self.conn.commit()
+        self.load_shopping_list()
+        messagebox.showinfo("Success", f"'{ingredient_name}' added to shopping list.")
+
     def add_recipe(self):
         name = self.recipe_name_entry.get()
         ingredients = self.ingredients_entry.get()
@@ -210,10 +281,13 @@ class PantryPal(ThemedTk):
         ttk.Label(view_window, text=recipe[3]).grid(row=1, column=1, sticky="w")
 
         ttk.Label(view_window, text="Ingredients:").grid(row=2, column=0, sticky="w")
-        ingredients_text = tk.Text(view_window, height=5, width=40)
-        ingredients_text.grid(row=2, column=1, sticky="w")
-        ingredients_text.insert("1.0", recipe[1])
-        ingredients_text.config(state="disabled")
+        ingredients_frame = ttk.Frame(view_window)
+        ingredients_frame.grid(row=2, column=1, sticky="w")
+        for ingredient in recipe[1].split(','):
+            ingredient = ingredient.strip()
+            link = ttk.Label(ingredients_frame, text=ingredient, foreground="blue", cursor="hand2")
+            link.pack(anchor="w")
+            link.bind("<Button-1>", lambda e, ing=ingredient: self.add_ingredient_to_shopping_list(ing))
 
         ttk.Label(view_window, text="Instructions:").grid(row=3, column=0, sticky="w")
         instructions_text = tk.Text(view_window, height=10, width=40)

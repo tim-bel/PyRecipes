@@ -144,6 +144,7 @@ class PantryPal(ThemedTk):
         self.recipe_tree.heading("Name", text="Name")
         self.recipe_tree.heading("Category", text="Category")
         self.recipe_tree.column("ID", width=30)
+        self.recipe_tree.bind("<Double-1>", self.view_recipe_event)
 
         # Buttons for managing recipes
         self.recipe_management_frame = ttk.Frame(self.recipes_frame)
@@ -184,6 +185,9 @@ class PantryPal(ThemedTk):
         rows = cursor.fetchall()
         for row in rows:
             self.recipe_tree.insert("", "end", values=row)
+
+    def view_recipe_event(self, event):
+        self.view_recipe()
 
     def view_recipe(self):
         selected_item = self.recipe_tree.focus()

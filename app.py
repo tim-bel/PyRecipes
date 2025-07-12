@@ -1,8 +1,10 @@
 import tkinter as tk
-from tkinter import ttk, messagebox, filedialog
+from tkinter import ttk, messagebox, filedialog, simpledialog
 from database import initialize_database, create_connection
 import csv
 from ttkthemes import ThemedTk
+from scraper import scrape_recipe
+main
 
 class PantryPal(ThemedTk):
     def __init__(self):
@@ -132,6 +134,10 @@ class PantryPal(ThemedTk):
         self.add_recipe_button = ttk.Button(self.recipe_entry_frame, text="Add Recipe", command=self.add_recipe)
         self.add_recipe_button.grid(row=4, column=1, padx=5, pady=5, sticky="e")
 
+        self.scrape_recipe_button = ttk.Button(self.recipe_entry_frame, text="Scrape Recipe", command=self.scrape_and_fill_recipe)
+        self.scrape_recipe_button.grid(row=4, column=0, padx=5, pady=5, sticky="w")
+
+main
         # Treeview to display recipes
         self.recipe_tree = ttk.Treeview(self.recipes_frame, columns=("ID", "Name", "Category"), show="headings")
         self.recipe_tree.pack(fill="both", expand=True, padx=10, pady=5)
@@ -304,6 +310,22 @@ class PantryPal(ThemedTk):
         self.instructions_entry_recipes.delete("1.0", "end")
         self.recipe_category_entry.delete(0, "end")
 
+
+    def scrape_and_fill_recipe(self):
+        url = simpledialog.askstring("Scrape Recipe", "Enter the URL of the recipe:")
+        if not url:
+            return
+
+        recipe_data = scrape_recipe(url)
+        if recipe_data:
+            self.clear_recipe_entries()
+            self.recipe_name_entry.insert(0, recipe_data["name"])
+            self.ingredients_entry.insert(0, ", ".join(recipe_data["ingredients"]))
+            self.instructions_entry_recipes.insert("1.0", "\n".join(recipe_data["instructions"]))
+        else:
+            messagebox.showerror("Error", "Failed to scrape the recipe. Please check the URL and try again.")
+
+main
     def load_meal_plan(self):
         for i in self.meal_plan_tree.get_children():
             self.meal_plan_tree.delete(i)

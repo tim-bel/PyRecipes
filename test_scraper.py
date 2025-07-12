@@ -8,7 +8,7 @@ class TestScraper(unittest.TestCase):
 
         self.assertIsNotNone(recipe_data)
         self.assertEqual(recipe_data["name"], "Fran's Fruit Salad")
-        self.assertIn("1   can    fruit cocktail", recipe_data["ingredients"])
+        self.assertIn("1 can fruit cocktail", recipe_data["ingredients"])
         self.assertIn("Drain fruit cocktail, mandarin orange,coconut gel,kaong set aside.", recipe_data["instructions"])
 
 if __name__ == "__main__":

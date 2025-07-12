@@ -1,6 +1,22 @@
 import requests
 from bs4 import BeautifulSoup
 import json
+import re
+import html
+
+def clean_text(text):
+    """Cleans text by removing HTML tags, extra whitespace, and decoding HTML entities."""
+    if not text:
+        return ""
+    # Decode HTML entities
+    text = html.unescape(text)
+    # Remove HTML tags
+    text = re.sub(r'<[^>]+>', '', text)
+    # Replace multiple whitespace characters with a single space
+    text = re.sub(r'\s+', ' ', text).strip()
+    # Remove "Recipe - Food.com" from the end of the string
+    text = text.replace(" Recipe - Food.com", "")
+    return text
 
 def scrape_recipe(url):
     try:
@@ -16,9 +32,9 @@ def scrape_recipe(url):
         script_tag = soup.find("script", type="application/ld+json")
         json_data = json.loads(script_tag.string)
 
-        name = json_data.get("name", "N/A")
-        ingredients = json_data.get("recipeIngredient", [])
-        instructions = [step["text"] for step in json_data.get("recipeInstructions", [])]
+        name = clean_text(json_data.get("name", "N/A"))
+        ingredients = [clean_text(ing) for ing in json_data.get("recipeIngredient", [])]
+        instructions = [clean_text(step["text"]) for step in json_data.get("recipeInstructions", [])]
 
     except (AttributeError, json.JSONDecodeError):
         name = "N/A"
